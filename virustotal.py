@@ -23,26 +23,6 @@ def scan_url(link):
     api_key = '0ae6b8d3275c989958651b00a6bd285d610baa16fe2b7bed2e56b2f5bcdae5bf' #bryan: my specific api key
     url = 'https://www.virustotal.com/vtapi/v2/url/scan'
     parameters = {"url": link, "apikey": api_key}
-    #data = urllib.urlencode(parameters)
-    #req = urllib2.Request(url, data)
-    """
-    try:
-        response_1 = requests.post(url, data=parameters)
-        print str(response_1)
-        if str(response_1) == '<Response [200]>':
-            response = urllib2.urlopen(req)
-            xjson = response.read()
-            response_code = json.loads(xjson).get('response_code')
-            verbose_msg = json.loads(xjson).get('verbose_msg')
-            #scan_id = response.json().get('scan_id')
-            if response_code == 1:
-                print verbose_msg
-            else:
-                print verbose_msg
-        elif str(response_1) == '<Response [204]>':
-            xjson = "bad"
-            print "darn"
-    """
 
     response = requests.post(url, data=parameters)
     print response
@@ -53,42 +33,16 @@ def scan_url(link):
         verbose_msg = xjson.get('verbose_msg')
         print "response code: ", response_code
     elif str(response) == '<Response [204]>':
-        time.sleep(5)
+        #time.sleep(5)
         xjson = "empty"
 
-    '''
-    try:
-        #response = urllib2.urlopen(req)
-        #print "Response: ", response
-        #xjson = response.read()
-        #response_code = json.loads(xjson).get('response_code')
-        #verbose_msg = json.loads(xjson).get('verbose_msg')
-        if response_code == 1:
-            print verbose_msg
-        else:
-            print verbose_msg
-    except Exception as e:
-        xjson = "bad"
-        print "bad"
-
-    except urllib2.HTTPError, e:
-        handleHTTPErros(e.code)
-    except urllib2.URLError, e:
-        print 'URLError: ' + str(e.reason)
-    except Exception:
-        import traceback
-        print 'generic exception: ' + traceback.format_exc()
-    '''
     return xjson
 
 def scan_report(xjson):
     api_key = '0ae6b8d3275c989958651b00a6bd285d610baa16fe2b7bed2e56b2f5bcdae5bf' #bryan: my specific api key
-    #scan_id = json.loads(xjson).get('scan_id')
     scan_id = xjson.get('scan_id')
     url = 'https://www.virustotal.com/vtapi/v2/url/report'
     parameters = {'apikey': api_key, 'resource': str(scan_id)}
-    #data = urllib.urlencode(parameters)
-    #req = urllib2.Request(url, data)
 
     response = requests.post(url, params=parameters)
     print response
@@ -101,36 +55,8 @@ def scan_report(xjson):
         json_report = "empty"
     return json_report
 
-    '''
-    try:
-        response = urllib2.urlopen(req)
-        json_report = response.read()
-        num_total_scans = json.loads(json_report).get('total')
-        scans = json.loads(json_report).get('scans')
-        return json_report
-    except urllib2.HTTPError, e:
-        handleHTTPErros(e.code)
-    except urllib2.URLError, e:
-        print 'URLError: ' + str(e.reason)
-    except Exception:
-        import traceback
-        print 'generic exception: ' + traceback.format_exc()
-    '''
 
 def detection(json_report):
-    '''
-    try:
-        #num_total_scans = json.loads(json_report).get('total')
-        #scans = json.loads(json_report).get('scans')
-
-    except urllib2.HTTPError, e:
-        handleHTTPErros(e.code)
-    except urllib2.URLError, e:
-        print 'URLError: ' + str(e.reason)
-    except Exception:
-        import traceback
-        print 'generic exception: ' + traceback.format_exc()
-    '''
     num_total_scans = json_report.get('total')
     scans = json_report.get('scans')
     for key in scans.keys():
@@ -147,7 +73,6 @@ def parse_csv():
     data = pd.read_csv('pin.csv', header=None, usecols=[4], names=['url'])
     urls_to_scan = data.values.tolist()
     return urls_to_scan
-    #data_df = pd.DataFrame(data)
 
 
 
