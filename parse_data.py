@@ -8,6 +8,8 @@ from termcolor import colored
 from sklearn.utils import shuffle
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 
 def is_number(s):
@@ -149,6 +151,52 @@ def print_feat_import(classifier, X_train):
     plt.xlim([-1, X_train.shape[1]])
     plt.show()
 
+def logistic_regression(X_train, Y_train, X_test, Y_test):
+    print colored('\nPERFORMING LOGISTIC REGRESSION', 'red')
+    classifier = LogisticRegression(multi_class='multinomial', solver='lbfgs')
+    classifier.fit(X_train, Y_train)
+
+    # Determine feature importance
+    #print_feat_import(classifier, X_train)
+
+    score = classifier.score(X_test, Y_test)
+    print 'Logistic Regression Score:', score
+
+def svr_float(combined_df):
+    
+    col_headers = list(combined_df)
+    for x in col_headers:
+        combined_df[x] = combined_df[x].astype(dtype=np.float64) # convert to type 'float'
+    return combined_df
+
+def support_vector_regressor(X_train, Y_train, X_test, Y_test):
+    print colored('\nPERFORMING SUPPORT VECTOR REGRESSION', 'red')
+    
+    train_col_headers = list(X_train)
+    test_col_headers = list(X_test)
+
+    '''
+    for x in train_col_headers:
+        X_train[x] = X_train[x].astype(dtype=np.float64) # convert to type 'float'
+        Y_train[x] = Y_train[x].astype(dtype=np.float64) # convert to type 'float'
+    for y in test_col_headers:
+        X_test[y] = X_test[y].astype(dtype=np.float64) # convert to type 'float'
+        Y_test[y] = Y_test[y].astype(dtype=np.float64) # convert to type 'float'
+    '''
+    print X_train.dtypes
+    print Y_train.dtypes
+    print X_test.dtypes
+    print Y_test.dtypes
+
+    classifier = SVR(gamma='scale', C=1.0, epsilon=0.2)
+    classifier.fit(X_train, Y_train)
+
+    # Determine feature importance
+    #print_feat_import(classifier, X_train)
+
+    score = classifier.score(X_test, Y_test)
+    print 'Score:', score
+
 def random_forest(X_train, Y_train, X_test, Y_test):
     print colored('\nPERFORMING RANDOM FOREST', 'red')
     classifier = RandomForestClassifier(n_estimators=100, max_depth=6)
@@ -199,8 +247,13 @@ def main():
     combined_df = combined_df.sample(frac=1).reset_index(drop=True)    
     #combined_df = shuffle(combined_df)
 
+    #combined_df = svr_float(combined_df) # for SVR
+
     X_train, Y_train, X_test, Y_test = data_split(combined_df)
-    random_forest(X_train, Y_train, X_test, Y_test)
+
+    #support_vector_regressor(X_train, Y_train, X_test, Y_test)
+    logistic_regression(X_train, Y_train, X_test, Y_test)
+    #random_forest(X_train, Y_train, X_test, Y_test)
     #extra_trees(X_train, Y_train, X_test, Y_test)
     #xgboost(X_train, Y_train, X_test, Y_test)
 
