@@ -29,14 +29,24 @@ def is_number(s):
 
 #bryan, new
 def one_hot_encoder(combined_df):
-    #enc = OneHotEncoder(handle_unknown='ignore')
-    #num_mentions_encoded = color_ohe.fit_transform(df.color_encoded.values.reshape(-1,1)).toarray()
-    month_df = pd.get_dummies(combined_df['month'], prefix=['month'])
-    date_df = pd.get_dummies(combined_df['date'], prefix=['date'])
+    enc = OneHotEncoder(handle_unknown='ignore')
+    month_encoded = enc.fit_transform(combined_df['month'].values.reshape(-1,1)).toarray()
+    hour_encoded = enc.fit_transform(combined_df['hour'].values.reshape(-1,1)).toarray()
+
+    month_df = pd.DataFrame(month_encoded, columns = ["Month_"+str(int(i)) for i in range(month_encoded.shape[1])])
     combined_df = pd.concat([combined_df, month_df], axis=1)
-    combined_df = pd.concat([combined_df, date_df], axis=1)
+    hour_df = pd.DataFrame(hour_encoded, columns = ["Hour_"+str(int(i)) for i in range(hour_encoded.shape[1])])
+    combined_df = pd.concat([combined_df, hour_df], axis=1)
+    combined_df = combined_df.loc[:, (combined_df != 0).any(axis=0)]
+
+    '''
+    month_df = pd.get_dummies(combined_df['month'], prefix=['month'])
+    hour_df = pd.get_dummies(combined_df['hour'], prefix=['hour'])
+    combined_df = pd.concat([combined_df, month_df], axis=1)
+    combined_df = pd.concat([combined_df, hour_df], axis=1)
     combined_df = combined_df.drop(['month'], axis=1)
-    combined_df = combined_df.drop(['date'], axis=1)
+    combined_df = combined_df.drop(['hour'], axis=1)
+    '''
     return combined_df
 
 def read_file():
@@ -48,7 +58,7 @@ def read_file():
     # randomly sample spambot file (300,000)
     spam_fp = '/Users/bryan/Documents/Classes/UC Davis/Fall Quarter 2018/Network Architecture and Resource Management/Project/social_spambots_1.csv/tweets.csv'
     n = sum(1 for line in open(spam_fp)) - 1 #number of records in file (excludes header)
-    s = 100000 #desired sample size
+    s = 300000 #desired sample size
     skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
 
     '''
@@ -62,7 +72,7 @@ def read_file():
     # randomly sample genuine file (900,000)
     gen_fp = '/Users/bryan/Documents/Classes/UC Davis/Fall Quarter 2018/Network Architecture and Resource Management/Project/genuine_accounts.csv/tweets.csv'
     n = sum(1 for line in open(gen_fp)) - 1 #number of records in file (excludes header)
-    s = 300000 #desired sample size
+    s = 900000 #desired sample size
     skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
 
     genuine = pd.read_csv(gen_fp, usecols=['retweet_count', 'num_hashtags', 'num_mentions', 'timestamp'], skiprows=skip)
@@ -72,6 +82,9 @@ def read_file():
                             'in_reply_to_screen_name', 'retweeted_status_id', 'num_mentions', 'timestamp'], dtype={'id': object, 'place': object},
                             skiprows=skip)
     '''
+
+    print spambots
+    print genuine
 
     return spambots, genuine
 
@@ -101,6 +114,8 @@ def create_df(spambots, genuine):
     print 'Creating dataframe...'
     spam_df = pd.DataFrame(spambots)
     gen_df = pd.DataFrame(genuine)
+    spam_df = spam_df.dropna(axis=0)
+    gen_df = gen_df.dropna(axis=0)
 
     # remove troublesome entry
     #gen_df = gen_df[gen_df['id'] != 'Fatal error: Maximum execution time of 300 seconds exceeded in /var/www/phpmyadmin/libraries/export/csv.php on line 178']
@@ -210,7 +225,7 @@ def random_forest(X_train, Y_train, X_test, Y_test):
     classifier.fit(X_train, Y_train)
 
     # Determine feature importance
-    print_feat_import(classifier, X_train)
+    #print_feat_import(classifier, X_train)
 
     score = classifier.score(X_test, Y_test)
     print 'Score:', score
