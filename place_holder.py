@@ -2,7 +2,7 @@ import random
 import numpy as np
 import pandas as pd
 import datetime as dt
-#import xgboost as xgb
+import xgboost as xgb
 import matplotlib.pyplot as plt
 from termcolor import colored
 from sklearn.utils import shuffle
@@ -37,7 +37,7 @@ def read_file():
     print 'Reading in files...'
 
     # randomly sample spambot file (300,000)
-    spam_fp = 'social_spambots_1.csv/tweets.csv'
+    spam_fp = 'social_spambots_1.csv/tweets.csv'               
     n = sum(1 for line in open(spam_fp)) - 1 #number of records in file (excludes header)
     s = 300000 #desired sample size
     skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
@@ -61,7 +61,7 @@ def read_file():
 
 def load_file():
     print 'Loading Pre-Created File...'
-    combined_fp = '/Users/bryan/Documents/Classes/UC Davis/Fall Quarter 2018/Network Architecture and Resource Management/Project/combined.csv'
+    combined_fp = 'combined.csv'
     combined_df = pd.read_csv(combined_fp)
     return combined_df
 
@@ -212,19 +212,14 @@ def support_vector_regressor(X_train, Y_train, X_test, Y_test):
 def random_forest(X_train, Y_train, X_test, Y_test):
     print colored('\nPERFORMING RANDOM FOREST', 'red')
 
+    classifier = RandomForestClassifier(n_estimators=2, max_depth=6)
+    classifier.fit(X_train, Y_train)
 
-    for est in range (1, 10):
-        for d in range (1,7,1):
-            print '\nNum Estimators:', est
-            print 'Depth', d
-            classifier = RandomForestClassifier(n_estimators=est, max_depth=d)
-            classifier.fit(X_train, Y_train)
+    # Determine feature importance
+    #print_feat_import(classifier, X_train)
 
-            # Determine feature importance
-            #print_feat_import(classifier, X_train)
-
-            score = classifier.score(X_test, Y_test)
-            print 'Random Forest Score:', score
+    score = classifier.score(X_test, Y_test)
+    print 'Random Forest Score:', score
 
 def extra_trees(X_train, Y_train, X_test, Y_test):
     print colored('\nPERFORMING EXTRA TREES', 'red')
@@ -252,22 +247,20 @@ def bagged_decision_tree(X_train, Y_train, X_test, Y_test):
         score = classifier.score(X_test, Y_test)
         print 'Bagged Decision Tree Score:', score
 
-'''
 def xgboost(X_train, Y_train, X_test, Y_test):
     print colored('\nPERFORMING XGBOOST:\n', 'red')
 
-    num_round = 10
-
-    params = {'max_depth':10, 'eta':0.05, 'silent':1, 'objective':'binary:logistic', 'eval_metric':'logloss',
-              'min_child_weight':3, 'subsample':0.6,'colsample_bytree':0.6, 'nthread':4}
+    params = {'max_depth':10, 'eta':0.05, 'silent':1, 'objective':'binary:logistic',
+              'min_child_weight':4, 'subsample':0.5,'colsample_bytree':0.7, 'nthread':4}
     classifier = xgb.XGBModel(**params)
     classifier.fit(X_train, Y_train,
-                    eval_set=[(X_train, Y_train), (X_test, Y_test)],
+                    eval_set=[(X_test, Y_test)],
                     eval_metric='logloss',
                     verbose=True)
     evals_result = classifier.evals_result()
     print evals_result
-'''
+    #  0.096322, 0.072576, 0.053894, 0.04207, 0.036596, 0.02993, 0.02501, 0.019127, 0.014405
+    # min child weight[2,3,4,5,6,7,8,9]: 0.013871, 0.013481, 0.013179, 0.013605, 0.014329, 0.013491, 0.014044, 0.014665
 
 def main():
     #spambots, genuine = read_file()
@@ -290,8 +283,8 @@ def main():
 
     #support_vector_regressor(X_train, Y_train, X_test, Y_test)
     #logistic_regression(X_train, Y_train, X_test, Y_test)
-    #random_forest(X_train, Y_train, X_test, Y_test)
-    extra_trees(X_train, Y_train, X_test, Y_test)
+    random_forest(X_train, Y_train, X_test, Y_test)
+    #extra_trees(X_train, Y_train, X_test, Y_test)
     #bagged_decision_tree(X_train, Y_train, X_test, Y_test)
     #xgboost(X_train, Y_train, X_test, Y_test)
 
