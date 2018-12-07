@@ -13,6 +13,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.feature_selection import SelectKBest, chi2
 
 def is_number(s):
     try:
@@ -56,7 +57,8 @@ def read_file():
     s = 300000 #desired sample size
     skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
 
-    spambots = pd.read_csv(spam_fp, usecols=['num_mentions', 'timestamp'], skiprows=skip)
+    spambots = pd.read_csv(spam_fp, usecols=['retweet_count', 'reply_count', 'favorite_count',
+                            'num_hashtags', 'num_urls', 'num_mentions', 'timestamp'], skiprows=skip)
 
     # randomly sample genuine file (900,000)
     gen_fp = 'genuine_accounts.csv/tweets.csv'
@@ -64,8 +66,8 @@ def read_file():
     s = 900000 #desired sample size
     skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
 
-    genuine = pd.read_csv(gen_fp, usecols=['num_mentions', 'timestamp'], skiprows=skip)
-
+    genuine = pd.read_csv(gen_fp, usecols=['retweet_count', 'reply_count', 'favorite_count',
+                            'num_hashtags', 'num_urls', 'num_mentions', 'timestamp'], skiprows=skip)
     return spambots, genuine
 
 def load_file():
@@ -85,6 +87,9 @@ def create_df(spambots, genuine):
     #gen_df = gen_df[gen_df['id'] != 'Fatal error: Maximum execution time of 300 seconds exceeded in /var/www/phpmyadmin/libraries/export/csv.php on line 178']
     #gen_df['id'] = gen_df['id'].astype(dtype=int) # convert from type 'object' to type 'int'
 
+    for col in list(gen_df):
+        gen_df = gen_df[gen_df[col] >= 0]
+        spam_df = spam_df[spam_df[col] >= 0]
 
     # extract useful information from timestamp
     gen_df['month'] = gen_df['timestamp'].apply(lambda x: dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S').month)
@@ -161,6 +166,20 @@ def print_feat_import(classifier, X_train):
     plt.xticks(range(X_train.shape[1]), indices)
     plt.xlim([-1, X_train.shape[1]])
     plt.show()
+    
+def chi2_feat_import(X_train, Y_train, X_test, Y_test):
+    print 'Calculating CHI2 Feature Importances'
+    selector = SelectKBest(chi2, k=3)
+    selector.fit_transform(X_train, Y_train)
+
+    col_headers = list(X_train.columns[selector.get_support(indices=True)])
+    X_train = X_train[col_headers]
+    X_test = X_test[col_headers]
+    print 'headers', col_headers
+    print 'train headers', list(X_train)
+    print 'test headers', list(X_test)
+
+    return X_train, Y_train, X_test, Y_test
 
 def logistic_regression(X_train, Y_train, X_test, Y_test):
     print colored('\nPERFORMING LOGISTIC REGRESSION', 'red')
@@ -231,13 +250,14 @@ def main():
     combined_df = combined_df.sample(frac=1).reset_index(drop=True)    
     #combined_df = shuffle(combined_df)
 
-    combined_df = one_hot_encoder(combined_df)
+    #combined_df = one_hot_encoder(combined_df)
 
     X_train, Y_train, X_test, Y_test = data_split(combined_df)
+    X_train, Y_train, X_test, Y_test = chi2_feat_import(X_train, Y_train, X_test, Y_test)
 
     #support_vector_regressor(X_train, Y_train, X_test, Y_test)
-    logistic_regression(X_train, Y_train, X_test, Y_test)
-    #random_forest(X_train, Y_train, X_test, Y_test)
+    #logistic_regression(X_train, Y_train, X_test, Y_test)
+    random_forest(X_train, Y_train, X_test, Y_test)
     #bagged_decision_tree(X_train, Y_train, X_test, Y_test)
     #extra_trees(X_train, Y_train, X_test, Y_test)
     #xgboost(X_train, Y_train, X_test, Y_test)
